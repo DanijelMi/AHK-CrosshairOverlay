@@ -1,0 +1,99 @@
+
+OnMessage(0x03, "WM_MOVE")
+OnMessage(0x201, "WM_LBUTTONDOWN")
+
+If !pToken := Gdip_Startup()
+{
+   MsgBox, 48, gdiplus error!, Gdiplus failed to start. Please ensure you have gdiplus on your system
+   ExitApp
+}
+font =tahoma
+If !hFamily := Gdip_FontFamilyCreate(Font)
+{
+MsgBox,  Font error! exit app!
+exitapp
+}
+onexit exit_bye
+Gui, 2:add,button,x60 y30 w80 h50 gcreate,click for layer
+Gui, 2:show, x320 y100 w200 h250, Gui2
+
+return 
+
+
+create:
+WinGetPos, x2,y2,w,h, Gui2
+Gui, 1:  -Caption +E0x80000 +LastFound +OwnDialogs +Owner +hwndhwnd +alwaysontop
+Gui, 1: Show, NA x2 y2 ,Gui1
+buttonX:=(w-40)//2
+buttonY:=(h-20)//2
+hbm := CreateDIBSection(w,h)
+hdc := CreateCompatibleDC()
+obm := SelectObject(hdc, hbm)
+pGraphics := Gdip_GraphicsFromHDC(hdc)
+Gdip_GraphicsClear(pGraphics, 0x60000000)
+Gdip_SetSmoothingMode(pGraphics, 4)
+Gdip_SetInterpolationMode(pGraphics, 7)
+pBrush := Gdip_BrushCreateSolid(0xffff0000)
+
+Gdip_FillEllipse(pGraphics, pBrush, buttonX, buttonY, 50,50)
+
+Options = x0 y220 w200 cffffffff Center  r4 s12
+rc:=Gdip_TextToGraphics(pGraphics, "click red dot !", Options, "tahoma")
+
+
+UpdateLayeredWindow(hwnd, hdc, x2, y2, w,h )
+return
+
+
+
+2Guiclose:
+exitapp
+
+remove_layer:
+Gui ,1: destroy
+Gdip_DisposeImage(pBitmap)
+SelectObject(hdc, obm)
+DeleteObject(hbm)
+DeleteDC(hdc)
+Gdip_DeleteGraphics(pGraphics)
+return
+
+WM_LBUTTONDOWN(wParam,lParam,msg,hwnd)
+{
+global buttonX , buttonY
+    X := lParam & 0xFFFF
+    Y := lParam >> 16
+    
+  
+if (A_Gui=1)
+  if (x>buttonX and x<buttonX+50 and y>buttonY and y<buttonY+50)
+  {
+  soundbeep
+  msgbox,,,remove layer,2
+  settimer, remove_layer,-20
+  }
+  
+	PostMessage, 0xA1, 2
+}
+
+
+!v::listvars
+esc::exitapp
+
+exit_bye:
+SelectObject(hdc, obm)
+DeleteObject(hbm)
+DeleteDC(hdc)
+Gdip_DeleteGraphics(pGraphics)
+Gdip_Shutdown(pToken)
+ExitApp
+
+WM_MOVE()
+{
+   WinGetPos, x1,y1,w1,h1, Gui1
+   WinGetPos, x2,y2,w2,h2, Gui2
+   If (A_Gui=1) {
+      
+      WinMove, Gui2,, x1, y1
+   }
+}
